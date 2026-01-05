@@ -529,6 +529,7 @@ def preprocess_qwen_2(
     tokenizer: transformers.PreTrainedTokenizer,
     has_image: bool = False
 ) -> Dict:
+    # import pdb; pdb.set_trace()
     conv = conversation_lib.default_conversation.copy()
     roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
 
@@ -846,8 +847,10 @@ def preprocess(
     # conversation_lib.default_conversation.version == "qwen_v2"
 
     if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.PLAIN:
+        # print("--plain--")
         return preprocess_plain(sources, tokenizer)
     if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.LLAMA_2:
+        # print("--llama_2--")
         return preprocess_llama_2(sources, tokenizer, has_image=has_image)
     if conversation_lib.default_conversation.version.startswith("v1"):
         # print('--v1--')

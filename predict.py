@@ -29,6 +29,7 @@ def predict(args):
     disable_torch_init()
     model_name = get_model_name_from_path(model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name, device="cuda:0")
+    # import pdb; pdb.set_trace()
 
     # Construct prompt
     qs = args.prompt
