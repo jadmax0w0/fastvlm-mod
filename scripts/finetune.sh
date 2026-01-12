@@ -7,13 +7,18 @@
 # --mm*, --image_aspect_ratio: 都可以在 predict.py 里面查看 model.config 获取
 
     # --pretrain_mm_mlp_adapter ./checkpoints/llava-v1.5-13b-pretrain/mm_projector.bin \
-deepspeed --include localhost:0 \
+    # --data_path playground/data/mammoth_si_10M.json \
+    # --image_folder playground/data/mammoth_single_image \
+    # --resume_checkpoint_dir ./ckpt/llava_fastvithd_0.5b_stage3_split1/checkpoint-3971 \
+    # --data_path playground/data/mammoth_si_anno_split/split_2.json \
+deepspeed --include localhost:0,1,2,3,4,5,6,7 \
     llava/train/train_mem.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /data2/lyx/ckpts/fastvlm/llava_fastvithd_0.5b_stage2 \
     --version qwen_2 \
-    --data_path ./playground/data/llava_v1_5_mix665k.json \
-    --image_folder ./playground/data/llava1.5-665k-data/ \
+    --data_path playground/data/mammoth_si_10M.jsonl \
+    --image_folder playground/data/mammoth_single_image \
+    --use_datasets_loader True \
     --vision_tower mobileclip_l_1024 \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
@@ -29,13 +34,13 @@ deepspeed --include localhost:0 \
     --gradient_accumulation_steps 4 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 50000 \
+    --save_steps 200 \
     --save_total_limit 1 \
     --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
-    --logging_steps 1 \
+    --logging_steps 50 \
     --tf32 True \
     --model_max_length 2048 \
     --gradient_checkpointing True \

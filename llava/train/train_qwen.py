@@ -38,6 +38,8 @@ from llava.mm_utils import tokenizer_image_token, process_anyres_image
 
 from PIL import Image
 
+from tqdm import tqdm
+
 
 local_rank = None
 
@@ -81,10 +83,12 @@ class DataArguments:
     image_grid_pinpoints: Optional[str] = field(default=None)
     image_crop_resolution: Optional[int] = field(default=None)
     image_split_resolution: Optional[int] = field(default=None)
+    use_datasets_loader: bool = False
 
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
+    resume_checkpoint_dir: Optional[str] = field(default=None)
     cache_dir: Optional[str] = field(default=None)
     optim: str = field(default="adamw_torch")
     remove_unused_columns: bool = field(default=False)
@@ -898,12 +902,25 @@ class LazySupervisedDataset(Dataset):
                  tokenizer: transformers.PreTrainedTokenizer,
                  data_args: DataArguments):
         super(LazySupervisedDataset, self).__init__()
-        #list_data_dict = json.load(open(data_path, "r"))
-        list_data_dict = []
-        for i, _data_path in enumerate(data_path):
-            data = json.load(open(_data_path, "r"))
-            data = [{**entry, 'img_path_idx': i} for entry in data]
-            list_data_dict += data
+
+        if not data_args.use_datasets_loader:
+            #list_data_dict = json.load(open(data_path, "r"))
+            list_data_dict = []
+            for i, _data_path in enumerate(data_path):
+                data = json.load(open(_data_path, "r"))
+                data = [{**entry, 'img_path_idx': i} for entry in data]
+                list_data_dict += data
+        
+        else:
+            print("Using datasets package to load dataset")
+            from datasets import load_dataset, concatenate_datasets
+            all_datasets = []
+            for i, _data_path in enumerate(data_path):
+                data = load_dataset("json", data_files=[_data_path], split='train')
+                data = data.add_column("img_path_idx", [i] * len(data))
+                all_datasets.append(data)
+            
+            list_data_dict = concatenate_datasets(all_datasets)
 
         self.tokenizer = tokenizer
         self.list_data_dict = list_data_dict
@@ -915,7 +932,7 @@ class LazySupervisedDataset(Dataset):
     @property
     def lengths(self):
         length_list = []
-        for sample in self.list_data_dict:
+        for sample in tqdm(self.list_data_dict, desc="Counting lengths", total=len(self.list_data_dict)):
             img_tokens = 128 if 'image' in sample else 0
             length_list.append(sum(len(conv['value'].split()) for conv in sample['conversations']) + img_tokens)
         return length_list
@@ -923,7 +940,7 @@ class LazySupervisedDataset(Dataset):
     @property
     def modality_lengths(self):
         length_list = []
-        for sample in self.list_data_dict:
+        for sample in tqdm(self.list_data_dict, desc="Counting modality lengths", total=len(self.list_data_dict)):
             cur_len = sum(len(conv['value'].split()) for conv in sample['conversations'])
             cur_len = cur_len if 'image' in sample else -cur_len
             length_list.append(cur_len)
@@ -934,7 +951,7 @@ class LazySupervisedDataset(Dataset):
         if isinstance(i, int):
             sources = [sources]
         assert len(sources) == 1, "Don't know why it is wrapped to a list"  # FIXME
-        if 'image' in sources[0]:
+        if 'image' in sources[0] and sources[0]['image'] is not None:
             image_file = self.list_data_dict[i]['image']
             img_path_idx = self.list_data_dict[i]['img_path_idx']
             image_folder = self.data_args.image_folder[img_path_idx]
@@ -975,7 +992,7 @@ class LazySupervisedDataset(Dataset):
                              labels=data_dict["labels"][0])
 
         # image exist in the data
-        if 'image' in self.list_data_dict[i]:
+        if 'image' in self.list_data_dict[i] and self.list_data_dict[i]['image'] is not None:
             data_dict['image'] = image
             data_dict['image_size'] = image_size
         elif self.data_args.is_multimodal:
@@ -989,7 +1006,7 @@ class LazySupervisedDataset(Dataset):
         try:
             return self.get_sample(i)
         except Exception as e:
-            print("Error loading sample")
+            print(f"Error loading sample {i}:\n{e}")
             print()
             return self.get_sample(0)
 
@@ -1224,7 +1241,10 @@ def train(attn_implementation=None):
                            args=training_args,
                            **data_module)
 
-    if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
+    if isinstance(training_args.resume_checkpoint_dir, str) and os.path.exists(training_args.resume_checkpoint_dir):
+        print(f"Detected resume from checkpoint: {training_args.resume_checkpoint_dir}")
+        trainer.train(resume_from_checkpoint=training_args.resume_checkpoint_dir)
+    elif list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         trainer.train(resume_from_checkpoint=True)
     else:
         trainer.train()
