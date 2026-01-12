@@ -142,3 +142,6 @@ app/FastVLM/model
 
 # Playground data
 playground/data
+
+# Checkpoints
+ckpt
