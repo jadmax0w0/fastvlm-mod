@@ -149,3 +149,9 @@ ckpt_bk
 
 # Train logs
 wandb
+
+# LMMs-Eval data
+llms-eval
+ 
+# LMMs-Eval results
+/eval

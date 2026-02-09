@@ -70,6 +70,7 @@ class LlavaQwen2ForCausalLM(Qwen2ForCausalLM, LlavaMetaForCausalLM):
         return_dict: Optional[bool] = None,
         cache_position=None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
+        import os
         import time
 
         if inputs_embeds is None:
@@ -91,7 +92,8 @@ class LlavaQwen2ForCausalLM(Qwen2ForCausalLM, LlavaMetaForCausalLM):
                 image_sizes
             )
             t = time.time()
-            print(f"Prepare inputs time: {(t - s):.2f}s")
+            if int(os.environ.get("FVLM_CKTIME", 0)) > 0:
+                print(f"Prepare inputs time: {(t - s):.2f}s")
         
         s = time.time()
         output = super().forward(
@@ -107,7 +109,8 @@ class LlavaQwen2ForCausalLM(Qwen2ForCausalLM, LlavaMetaForCausalLM):
             return_dict=return_dict
         )
         t = time.time()
-        print(f"LLM forward time: {(t - s):.2f}s")
+        if int(os.environ.get("FVLM_CKTIME", 0)) > 0:
+            print(f"LLM forward time: {(t - s):.2f}s")
 
         return output
 
