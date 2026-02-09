@@ -122,3 +122,7 @@ Deepspeed args:
   '--lazy_preprocess',
   'True'
 ]
+
+---
+
+- 训练数据直接使用 .json 格式的，如果过大，原有的 lazy supervised dataset 程序会将其全部读到内存中（list 格式）。即使切换到 data loader 也会如此。但如果切换到 .jsonl 格式，使用 data loader 就能规避这个问题。

@@ -71,6 +71,12 @@ def _modifier_remove_extra_keys(sample: dict, i: int):
     #     print(f"  Modified: {sample.keys()}")
     return sample
 
+def _modifier_add_none_image_field(sample: dict, i: int):
+    if 'image' in sample:
+        return sample
+    sample['image'] = None
+    return sample
+
 def _filter_remove_ill_format(sample: dict, i: int):
     if len(sample.keys()) == 2 and ("id" not in sample or "conversations" not in sample):
         print(f"Ill format in row id {i}: {sample.keys()}")
@@ -114,6 +120,6 @@ if __name__ == "__main__":
 
     to_jsonl(
         args.path,
-        [_modifier_id_to_string, _modifier_remove_extra_keys],
+        [_modifier_id_to_string, _modifier_remove_extra_keys, _modifier_add_none_image_field],
         [_filter_remove_ill_format, _filter_remove_ill_conversation_format]
     )

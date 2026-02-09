@@ -11,13 +11,17 @@
     # --image_folder playground/data/mammoth_single_image \
     # --resume_checkpoint_dir ./ckpt/llava_fastvithd_0.5b_stage3_split1/checkpoint-3971 \
     # --data_path playground/data/mammoth_si_anno_split/split_2.json \
-deepspeed --include localhost:0,1,2,3,4,5,6,7 \
+
+    # --data_path playground/data/mammoth_si_10M.jsonl \
+    # --image_folder playground/data/mammoth_single_image \
+# deepspeed --include localhost:0,1,2,3,4,5,6,7 \
+deepspeed --include localhost:1 \
     llava/train/train_mem.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /data2/lyx/ckpts/fastvlm/llava_fastvithd_0.5b_stage2 \
     --version qwen_2 \
-    --data_path playground/data/mammoth_si_10M.jsonl \
-    --image_folder playground/data/mammoth_single_image \
+    --data_path playground/data/llava_v1_5_mix665k.jsonl \
+    --image_folder playground/data/llava1.5-665k-data \
     --use_datasets_loader True \
     --vision_tower mobileclip_l_1024 \
     --mm_projector_type mlp2x_gelu \
@@ -27,7 +31,7 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 \
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir ./ckpt/llava_fastvithd_0.5b_stage3 \
+    --output_dir ./ckpt/llava_fastvithd_0.5b_stage3_llava665k \
     --num_train_epochs 1 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \

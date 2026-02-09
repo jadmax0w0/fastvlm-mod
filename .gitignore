@@ -146,3 +146,6 @@ playground/data
 # Checkpoints
 ckpt
 ckpt_bk
+
+# Train logs
+wandb
