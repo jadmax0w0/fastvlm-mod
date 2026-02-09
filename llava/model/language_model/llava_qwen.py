@@ -70,8 +70,10 @@ class LlavaQwen2ForCausalLM(Qwen2ForCausalLM, LlavaMetaForCausalLM):
         return_dict: Optional[bool] = None,
         cache_position=None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
+        import time
 
         if inputs_embeds is None:
+            s = time.time()
             (
                 input_ids,
                 position_ids,
@@ -88,8 +90,11 @@ class LlavaQwen2ForCausalLM(Qwen2ForCausalLM, LlavaMetaForCausalLM):
                 images,
                 image_sizes
             )
-
-        return super().forward(
+            t = time.time()
+            print(f"Prepare inputs time: {(t - s):.2f}s")
+        
+        s = time.time()
+        output = super().forward(
             input_ids=input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,
@@ -101,6 +106,10 @@ class LlavaQwen2ForCausalLM(Qwen2ForCausalLM, LlavaMetaForCausalLM):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict
         )
+        t = time.time()
+        print(f"LLM forward time: {(t - s):.2f}s")
+
+        return output
 
     @torch.no_grad()
     def generate(

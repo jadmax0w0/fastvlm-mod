@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# export MASTER_PORT=29501
+
+# 把 gradient accumulation steps 设置为 1，测出来 backward time 最久 1.3s, forward 0.5s
+
 # Args to note:
 # --include: 在哪几个 GPU 上跑
 # --version: 控制 conversation template 用谁的，在 conversation.py 里面可以看都有哪些可选项
@@ -15,7 +19,8 @@
     # --data_path playground/data/mammoth_si_10M.jsonl \
     # --image_folder playground/data/mammoth_single_image \
 # deepspeed --include localhost:0,1,2,3,4,5,6,7 \
-deepspeed --include localhost:1 \
+deepspeed --include localhost:2 \
+    --master_port 29501 \
     llava/train/train_mem.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /data2/lyx/ckpts/fastvlm/llava_fastvithd_0.5b_stage2 \
@@ -31,7 +36,7 @@ deepspeed --include localhost:1 \
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir ./ckpt/llava_fastvithd_0.5b_stage3_llava665k \
+    --output_dir ./ckpt/llava_fastvithd_0.5b_stage3_llava665k_test \
     --num_train_epochs 1 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
@@ -49,5 +54,5 @@ deepspeed --include localhost:1 \
     --model_max_length 2048 \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
-    --lazy_preprocess True #\
-    # --report_to wandb
+    --lazy_preprocess True \
+    --report_to none
