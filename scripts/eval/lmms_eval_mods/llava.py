@@ -19,6 +19,8 @@ from typing import List, Optional, Union, Tuple
 from packaging import version
 import warnings
 
+import transformers
+
 warnings.filterwarnings("ignore")
 
 from loguru import logger as eval_logger
@@ -382,6 +384,11 @@ class Llava(lmms):
             # TODO: attention to this major generation step...
             # NOTE: modification starts from here...
             try:
+                stop_crit = None
+                if isinstance(until, list):
+                    until_ids = [self.tokenizer.encode(w)[0] for w in until]
+                    stop_crit = KeywordStoppingCriteria(until_ids)
+                
                 with torch.inference_mode():
                     cont = self.model.generate(
                         input_ids,
@@ -394,9 +401,10 @@ class Llava(lmms):
                         top_p=gen_kwargs["top_p"],
                         num_beams=gen_kwargs["num_beams"],
                         max_new_tokens=gen_kwargs["max_new_tokens"],
+                        stopping_criteria=transformers.StoppingCriteriaList([stop_crit]) if stop_crit is not None else None,
                         use_cache=self.use_cache,
                     )
-                    text_outputs = self.tokenizer.batch_decode(cont, skip_special_tokens=True)
+                    text_outputs = self.tokenizer.batch_decode(cont, skip_special_tokens=False)
                     if isinstance(until, list):
                         text_outputs_new = []
                         for tout in text_outputs:
@@ -406,20 +414,8 @@ class Llava(lmms):
                                     tout_new = tout_new.split(sep)[0]
                             text_outputs_new.append(tout_new)
                         text_outputs = text_outputs_new
-                    
-                    # import os
-                    # show_text_output = os.environ.get("LMMSEVAL_LLAVA_SHOW_TEXTOUTPUT", 0)
-                    # try:
-                    #     if int(show_text_output) > 0:
-                    #         print(f"Text output for doc id {doc_id[0]}:\n  -> {text_outputs}")
-                    # except ValueError as e:
-                    #     if isinstance(show_text_output, str):
-                    #         os.makedirs(show_text_output, exist_ok=True)
-                    #         log_path = os.path.join(show_text_output, f"{str(input_ids.device).replace(":", "_")}.log")
-                    #         with open(log_path, mode='r' if os.path.exists(log_path) else 'w', encoding='utf-8') as f:
-                    #             f.write(f"Text output for doc id {doc_id[0]}:\n  -> {text_outputs}\n")
-                    #     else:
-                    #         raise e
+                    # if "0" in str(input_ids.device):
+                    #     print(f"Text output for doc id {doc_id[0]}:\n  -> {text_outputs}")
             # NOTE: ...modification ends here
 
             except Exception as e:
@@ -448,3 +444,14 @@ class Llava(lmms):
 
         pbar.close()
         return res
+
+
+class KeywordStoppingCriteria(transformers.StoppingCriteria):
+    def __init__(self, ids: list):
+        super().__init__()
+        self.ids = ids
+    
+    def __call__(self, input_ids: torch.LongTensor, scores, **kwargs):
+        if input_ids[0][-1] in self.ids:
+            return True
+        return False
