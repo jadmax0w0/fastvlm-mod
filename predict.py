@@ -62,7 +62,7 @@ def predict(args):
             temperature=args.temperature,
             top_p=args.top_p,
             num_beams=args.num_beams,
-            max_new_tokens=256,
+            max_new_tokens=args.max_new_tokens,
             use_cache=True)
 
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
@@ -83,6 +83,7 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--top_p", type=float, default=None)
     parser.add_argument("--num_beams", type=int, default=1)
+    parser.add_argument("--max_new_tokens", type=int, default=256)
     args = parser.parse_args()
 
     predict(args)
